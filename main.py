@@ -17,15 +17,9 @@ driver = webdriver.Chrome(service=service)
 
 # 2-page url
 driver.get("https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal"
-           "+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne"
-           "+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy"
-           "=deals&ascending=true")
-
-# exit if element does not exist
-WebDriverWait(driver, 10).until(
-    expected_conditions.presence_of_element_located((By.CLASS_NAME, "Index_feedContainer__Wa9_B")))
-
-listings = driver.find_elements(By.CLASS_NAME, "ItemCardNew_wrapper__phLcV")
+           "%22%22+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015"
+           "%2CCologne%22%22+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1"
+           "&priceMax=5500&sortBy%22%22=deals&ascending=true&sortBy=price")
 
 
 def sticker_to_string(s: str):
@@ -33,27 +27,39 @@ def sticker_to_string(s: str):
     return s[-1].split('.')[0] + ' ' + s[-2]
 
 
-for n in listings:
-    if n.get_attribute('class') == "ItemCardNew_wrapper__phLcV":
-        print(n.find_element(By.TAG_NAME, "a").get_attribute('href'))  # link
-        print(n.find_element(By.CLASS_NAME, "ItemCardNewBody_name__SYDXg").text)  # listing name
-        print(n.find_element(By.CLASS_NAME, "ItemCardNewBody_wear__vFzrf").text)  # wear
-        print(n.find_element(By.CLASS_NAME, "ItemCardNewBody_float__mpCp4").text)  # float
-        print(n.find_element(By.CLASS_NAME, "ItemCardNewBody_pricePrimary__pqq_k").text)  # price
+def read_page():
 
-        stickers = n.find_elements(By.CLASS_NAME, "Sticker_container__aWWJd")
-        for sticker in stickers:
-            sticker_name = sticker_to_string(sticker.find_element(By.TAG_NAME, "img").get_attribute('src'))
-            print(sticker_name)
+    # exit if element does not exist
+    WebDriverWait(driver, 10).until(
+        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='Index_feedContainer']")))
 
-try:
-    next_page = WebDriverWait(driver, 20).until(
-        expected_conditions.element_to_be_clickable((By.CLASS_NAME, "Pager_next__HLqQ7")))
-    next_page.click()
-    time.sleep(10)
-    print("going next")
-except Exception as e:
-    print(e)
-    driver.quit()
+    listings = driver.find_elements(By.CSS_SELECTOR, "div[class^='ItemCardNew_wrapper']")
 
-driver.quit()
+    for n in listings:
+        if ' ' not in n.get_attribute('class'):
+            print(n.find_element(By.TAG_NAME, "a").get_attribute('href'))  # link
+            print(n.find_element(By.CSS_SELECTOR, "span[class^='ItemCardNewBody_name']").text)  # listing name
+            print(n.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_wear']").text)  # wear
+            print(n.find_element(By.CSS_SELECTOR, "span[class^='ItemCardNewBody_float']").text)  # float
+            print(n.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_pricePrimary']").text)  # price
+
+            stickers = n.find_elements(By.CSS_SELECTOR, "div[class^='Sticker_container']")
+            for sticker in stickers:
+                sticker_name = sticker_to_string(sticker.find_element(By.TAG_NAME, "img").get_attribute('src'))
+                print(sticker_name)
+
+
+read_page()
+#
+# while True:
+#     try:
+#         next_page = WebDriverWait(driver, 20).until(
+#             expected_conditions.element_to_be_clickable((By.CLASS_NAME, "Pager_next__HLqQ7")))
+#         driver.get(driver.find_element(By.CLASS_NAME, "Pager_next__HLqQ7").get_attribute('href'))
+#         next_page.click()
+#         WebDriverWait(driver, 10).until(
+#             expected_conditions.presence_of_element_located((By.CLASS_NAME, "Index_feedContainer__Wa9_B")))
+#         read_page()
+#     except Exception as e:
+#         print(e)
+#         driver.quit()
