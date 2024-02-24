@@ -3,6 +3,8 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
+import csv
+import os
 import time
 
 service = Service(executable_path='chromedriver.exe')
@@ -28,25 +30,43 @@ def sticker_to_string(s: str):
 
 
 def read_page():
-
     # exit if element does not exist
     WebDriverWait(driver, 10).until(
         expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='ItemCardNew_wrapper']")))
+    WebDriverWait(driver, 10).until(
+        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_name']")))
+    WebDriverWait(driver, 10).until(
+        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='ItemCardNewBody_wear']")))
+    WebDriverWait(driver, 10).until(
+        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_float']")))
 
     listings = driver.find_elements(By.CSS_SELECTOR, "div[class^='ItemCardNew_wrapper']")
 
-    for n in listings:
-        if ' ' not in n.get_attribute('class'):
-            print(n.find_element(By.TAG_NAME, "a").get_attribute('href'))  # link
-            print(n.find_element(By.CSS_SELECTOR, "span[class^='ItemCardNewBody_name']").text)  # listing name
-            print(n.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_wear']").text)  # wear
-            print(n.find_element(By.CSS_SELECTOR, "span[class^='ItemCardNewBody_float']").text)  # float
-            print(n.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_pricePrimary']").text)  # price
+    file_exists = os.path.exists('data.csv')
+    with open('data.csv', 'a', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
 
-            stickers = n.find_elements(By.CSS_SELECTOR, "div[class^='Sticker_container']")
-            for sticker in stickers:
-                sticker_name = sticker_to_string(sticker.find_element(By.TAG_NAME, "img").get_attribute('src'))
-                print(sticker_name)
+        # Write the header row only if the file doesn't exist
+        if not file_exists:
+            writer.writerow(['Listing Name', 'Wear', 'Float', 'Price', 'Stickers', 'Link'])
+
+        for n in listings:
+            if ' ' not in n.get_attribute('class'):
+
+                link = n.find_element(By.TAG_NAME, "a").get_attribute('href')
+                name = n.find_element(By.CSS_SELECTOR, "span[class^='ItemCardNewBody_name']").text  # listing name
+                wear = n.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_wear']").text  # wear
+                float_value = n.find_element(By.CSS_SELECTOR, "span[class^='ItemCardNewBody_float']").text  # float
+                price = n.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_pricePrimary']").text  # price
+
+                stickers = n.find_elements(By.CSS_SELECTOR, "div[class^='Sticker_container']")
+                all_stickers = []
+                for sticker in stickers:
+                    sticker_name = sticker_to_string(sticker.find_element(By.TAG_NAME, "img").get_attribute('src'))
+                    all_stickers.append(sticker_name)
+
+                print([name, wear, float_value, price, all_stickers, link])
+                writer.writerow([name, wear, float_value, price, all_stickers, link])
 
 
 read_page()
@@ -56,6 +76,8 @@ while True:
         WebDriverWait(driver, 20).until(
             expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "a[class^='Pager_next']"))).click()
         read_page()
-    except Exception as e:
+    except FileNotFoundError as e:
         print("no next page, quitting.")
         driver.quit()
+
+driver.quit()
