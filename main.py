@@ -13,12 +13,19 @@ driver.get(
     "https://gamerpay.gg/?buffMax=105&priceMin=115.37751522983201&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=147.68321949418498&sortBy=deals&ascending=true")
 
 # exit if element does not exist
-WebDriverWait(driver, 10).until(expected_conditions.presence_of_element_located(((By.CLASS_NAME, "Index_feedContainer__Wa9_B"))))
+WebDriverWait(driver, 10).until(
+    expected_conditions.presence_of_element_located(((By.CLASS_NAME, "Index_feedContainer__Wa9_B"))))
 
 listings = driver.find_elements(By.CLASS_NAME, "ItemCardNew_wrapper__phLcV")
 
+
+def sticker_to_string(s: str):
+    s = s.split('/')
+    return s[-1].split('.')[0] + ' ' + s[-2]
+
+
 for n in listings:
-    if(n.get_attribute('class') == "ItemCardNew_wrapper__phLcV"):
+    if n.get_attribute('class') == "ItemCardNew_wrapper__phLcV":
         print(n.find_element(By.TAG_NAME, "a").get_attribute('href'))  # link
         print(n.find_element(By.CLASS_NAME, "ItemCardNewBody_name__SYDXg").text)  # listing name
         print(n.find_element(By.CLASS_NAME, "ItemCardNewBody_wear__vFzrf").text)  # wear
@@ -27,6 +34,7 @@ for n in listings:
 
         stickers = n.find_elements(By.CLASS_NAME, "Sticker_container__aWWJd")
         for sticker in stickers:
-            print(sticker.find_element(By.TAG_NAME, "img").get_attribute('src'))
+            sticker_name = sticker_to_string(sticker.find_element(By.TAG_NAME, "img").get_attribute('src'))
+            print(sticker_name)
 
 driver.quit()
