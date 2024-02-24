@@ -31,7 +31,7 @@ def read_page():
 
     # exit if element does not exist
     WebDriverWait(driver, 10).until(
-        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='Index_feedContainer']")))
+        expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='ItemCardNew_wrapper']")))
 
     listings = driver.find_elements(By.CSS_SELECTOR, "div[class^='ItemCardNew_wrapper']")
 
@@ -50,16 +50,12 @@ def read_page():
 
 
 read_page()
-#
-# while True:
-#     try:
-#         next_page = WebDriverWait(driver, 20).until(
-#             expected_conditions.element_to_be_clickable((By.CLASS_NAME, "Pager_next__HLqQ7")))
-#         driver.get(driver.find_element(By.CLASS_NAME, "Pager_next__HLqQ7").get_attribute('href'))
-#         next_page.click()
-#         WebDriverWait(driver, 10).until(
-#             expected_conditions.presence_of_element_located((By.CLASS_NAME, "Index_feedContainer__Wa9_B")))
-#         read_page()
-#     except Exception as e:
-#         print(e)
-#         driver.quit()
+
+while True:
+    try:
+        WebDriverWait(driver, 20).until(
+            expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "a[class^='Pager_next']"))).click()
+        read_page()
+    except Exception as e:
+        print("no next page, quitting.")
+        driver.quit()
