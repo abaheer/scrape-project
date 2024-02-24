@@ -18,12 +18,15 @@ WebDriverWait(driver, 10).until(expected_conditions.presence_of_element_located(
 listings = driver.find_elements(By.CLASS_NAME, "ItemCardNew_wrapper__phLcV")
 
 for n in listings:
-    #print(n.get_attribute('class'))
     if(n.get_attribute('class') == "ItemCardNew_wrapper__phLcV"):
         print(n.find_element(By.TAG_NAME, "a").get_attribute('href'))  # link
         print(n.find_element(By.CLASS_NAME, "ItemCardNewBody_name__SYDXg").text)  # listing name
         print(n.find_element(By.CLASS_NAME, "ItemCardNewBody_wear__vFzrf").text)  # wear
         print(n.find_element(By.CLASS_NAME, "ItemCardNewBody_float__mpCp4").text)  # float
         print(n.find_element(By.CLASS_NAME, "ItemCardNewBody_pricePrimary__pqq_k").text)  # price
+
+        stickers = n.find_elements(By.CLASS_NAME, "Sticker_container__aWWJd")
+        for sticker in stickers:
+            print(sticker.find_element(By.TAG_NAME, "img").get_attribute('src'))
 
 driver.quit()
