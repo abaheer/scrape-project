@@ -11,7 +11,7 @@ import pandas as pd
 
 
 class Scraper:
-    def __init__(self, sticker_filter: bool):
+    def __init__(self, page_url, file_path, sticker_filter: bool):
 
         self.sticker_filter = sticker_filter
         self.special = ['holo', 'gold', 'foil']
@@ -28,21 +28,13 @@ class Scraper:
         self.service = Service(executable_path='chromedriver.exe')
         self.driver = webdriver.Chrome(service=self.service, options=chrome_options)
 
-        # many page url
-        #self.driver.get(
-        #    "https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true")
-
         # alt
-        self.driver.get(
-            "https://gamerpay.gg/?buffMax=102&priceMin=148.4691995573589&wear=Battle-Scarred%2CField-Tested%2CMinimal"
-            "+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022"
-            "%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&page=1&priceMax=2766"
-            ".506824050166")
+        self.driver.get(page_url)
 
         # # 2 item url
         # driver.get("https://gamerpay.gg/?buffMax=105&priceMin=115.37751522983201&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=147.68321949418498&sortBy=deals&ascending=true")
 
-        self.file_path = 'data_sh.csv'
+        self.file_path = file_path
         file_exists = os.path.exists(self.file_path)
 
         # initialize DataFrame and write header if file does not exist
@@ -61,6 +53,7 @@ class Scraper:
 
     def format_stickers(self, stickers):
         all_stickers = []
+        self.is_special = False
         for s in stickers:
             sticker = self.sticker_to_string(s.find_element(By.TAG_NAME, "img").get_attribute('src'))
             all_stickers.append(sticker)
@@ -119,5 +112,8 @@ class Scraper:
                 self.driver.quit()
                 break
 
+url="https://gamerpay.gg/?buffMax=102&priceMin=148.4691995573589&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&page=1&priceMax=2766.506824050166"
+Scraper(url, 'data_sh.csv', True)
 
-Scraper(True)
+url2="https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true"
+Scraper(url2, 'data.csv', False)
