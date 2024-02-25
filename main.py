@@ -4,6 +4,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.wait import TimeoutException
+from selenium.webdriver.chrome.options import Options
+
 import os
 import pandas as pd
 
@@ -16,8 +18,15 @@ class Scraper:
         self.is_special = False
         self.is_first = True
 
+        chrome_options = Options()
+        chrome_options.add_argument("--headless=new")
+        driver = webdriver.Chrome(options=chrome_options)
+
+        user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'
+        chrome_options.add_argument(f'user-agent={user_agent}')
+
         self.service = Service(executable_path='chromedriver.exe')
-        self.driver = webdriver.Chrome(service=self.service)
+        self.driver = webdriver.Chrome(service=self.service, options=chrome_options)
 
         # many page url
         #self.driver.get(
@@ -55,7 +64,7 @@ class Scraper:
         for s in stickers:
             sticker = self.sticker_to_string(s.find_element(By.TAG_NAME, "img").get_attribute('src'))
             all_stickers.append(sticker)
-            if sticker and (self.special[0] in sticker or self.special[1] in sticker or self.special[2] in sticker):
+            if sticker and self.sticker_filter and (self.special[0] in sticker or self.special[1] in sticker or self.special[2] in sticker):
                 self.is_special = True
         return all_stickers
 
@@ -84,7 +93,7 @@ class Scraper:
                 self.is_special = False
                 all_stickers = self.format_stickers(stickers)
 
-                if link not in self.df['Link'].values and (self.is_special):
+                if link not in self.df['Link'].values and (self.is_special or not self.sticker_filter):
                     if self.is_first:
                         self.df = self.df._append({'Listing Name': 'NEW SCRAPE'}, ignore_index=True)
                         self.is_first = False
