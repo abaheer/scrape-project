@@ -27,6 +27,17 @@ class Scraper:
         #            "%2CCologne%22%22+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1"
         #            "&priceMax=5500&sortBy%22%22=deals&ascending=true&sortBy=price")
 
+        self.file_path = 'data.csv'
+        file_exists = os.path.exists(self.file_path)
+
+        # initialize DataFrame and write header if file does not exist
+        if not file_exists:
+            df = pd.DataFrame(columns=['Listing Name', 'Wear', 'Float', 'Price', 'Stickers', 'Link'])
+            df.to_csv(self.file_path, index=False)
+
+        # read the CSV file into a DataFrame
+        self.df = pd.read_csv(self.file_path)
+
         self.read_pages()
 
     def sticker_to_string(self, s: str):
@@ -46,18 +57,6 @@ class Scraper:
 
         listings = self.driver.find_elements(By.CSS_SELECTOR, "div[class^='ItemCardNew_wrapper']")
 
-        # Check if the file exists
-        file_path = 'data.csv'
-        file_exists = os.path.exists(file_path)
-
-        # Initialize DataFrame and write header if file does not exist
-        if not file_exists:
-            df = pd.DataFrame(columns=['Listing Name', 'Wear', 'Float', 'Price', 'Stickers', 'Link'])
-            df.to_csv(file_path, index=False)
-
-        # Read the CSV file into a DataFrame
-        df = pd.read_csv(file_path)
-
         for n in listings:
             if ' ' not in n.get_attribute('class'):
                 link = n.find_element(By.TAG_NAME, "a").get_attribute('href')
@@ -72,16 +71,16 @@ class Scraper:
                                 in stickers]
 
                 # Check if link exists in DataFrame
-                if link not in df['Link'].values:
+                if link not in self.df['Link'].values:
                     # Append new row to DataFrame
-                    df = df._append(
+                    self.df = self.df._append(
                         {'Listing Name': name, 'Wear': wear, 'Float': float_value, 'Price': price,
                          'Stickers': all_stickers,
                          'Link': link}, ignore_index=True)
                     print('add')
 
         # Write DataFrame back to CSV file
-        df.to_csv(file_path, index=False)
+        self.df.to_csv(self.file_path, index=False)
 
     def read_pages(self):
         while True:
