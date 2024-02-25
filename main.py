@@ -15,12 +15,12 @@ class Scraper:
 
         self.sticker_filter = sticker_filter
         self.special = ['holo', 'gold', 'foil']
+        self.avoid = ['rmr', 'sig']
         self.is_special = False
         self.is_first = True
 
         chrome_options = Options()
         chrome_options.add_argument("--headless=new")
-        driver = webdriver.Chrome(options=chrome_options)
 
         user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'
         chrome_options.add_argument(f'user-agent={user_agent}')
@@ -28,11 +28,7 @@ class Scraper:
         self.service = Service(executable_path='chromedriver.exe')
         self.driver = webdriver.Chrome(service=self.service, options=chrome_options)
 
-        # alt
         self.driver.get(page_url)
-
-        # # 2 item url
-        # driver.get("https://gamerpay.gg/?buffMax=105&priceMin=115.37751522983201&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=147.68321949418498&sortBy=deals&ascending=true")
 
         self.file_path = file_path
         file_exists = os.path.exists(self.file_path)
@@ -57,7 +53,9 @@ class Scraper:
         for s in stickers:
             sticker = self.sticker_to_string(s.find_element(By.TAG_NAME, "img").get_attribute('src'))
             all_stickers.append(sticker)
-            if sticker and self.sticker_filter and (self.special[0] in sticker or self.special[1] in sticker or self.special[2] in sticker):
+            if sticker and self.sticker_filter and (self.special[0] in sticker or self.special[1] in sticker or
+                                                    self.special[2] in sticker) and (self.avoid[0] not in sticker and
+                                                                                     self.avoid[1] not in sticker):
                 self.is_special = True
         return all_stickers
 
@@ -112,8 +110,11 @@ class Scraper:
                 self.driver.quit()
                 break
 
-url="https://gamerpay.gg/?buffMax=102&priceMin=148.4691995573589&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&page=1&priceMax=2766.506824050166"
+url="https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_Rifle.AK-47%2CCSGO_Type_Rifle.M4A1-S%2CCSGO_Type_Rifle.M4A4&page=1"
 Scraper(url, 'data_sh.csv', True)
 
-url2="https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true"
-Scraper(url2, 'data.csv', False)
+url2="https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_SniperRifle.AWP%2CCSGO_Type_Pistol.Desert+Eagle%2CCSGO_Type_Pistol.USP-S%2CCSGO_Type_Pistol.Glock-18&page=1"
+Scraper(url2, 'data_sh.csv', True)
+
+url3="https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true"
+Scraper(url3, 'data.csv', False)
