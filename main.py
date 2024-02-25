@@ -9,25 +9,31 @@ import pandas as pd
 
 
 class Scraper:
-    def __init__(self):
+    def __init__(self, sticker_filter: bool):
+
+        self.sticker_filter = sticker_filter
+        self.special = ['holo', 'gold', 'foil']
+        self.is_special = False
         self.is_first = True
+
         self.service = Service(executable_path='chromedriver.exe')
         self.driver = webdriver.Chrome(service=self.service)
 
         # many page url
+        #self.driver.get(
+        #    "https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true")
+
+        # alt
         self.driver.get(
-            "https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true")
+            "https://gamerpay.gg/?buffMax=102&priceMin=148.4691995573589&wear=Battle-Scarred%2CField-Tested%2CMinimal"
+            "+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022"
+            "%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&page=1&priceMax=2766"
+            ".506824050166")
 
         # # 2 item url
         # driver.get("https://gamerpay.gg/?buffMax=105&priceMin=115.37751522983201&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=147.68321949418498&sortBy=deals&ascending=true")
 
-        # 2-page url
-        # driver.get("https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal"
-        #            "%22%22+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015"
-        #            "%2CCologne%22%22+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1"
-        #            "&priceMax=5500&sortBy%22%22=deals&ascending=true&sortBy=price")
-
-        self.file_path = 'data.csv'
+        self.file_path = 'data_sh.csv'
         file_exists = os.path.exists(self.file_path)
 
         # initialize DataFrame and write header if file does not exist
@@ -43,6 +49,15 @@ class Scraper:
     def sticker_to_string(self, s: str):
         s = s.split('/')
         return s[-1].split('.')[0] + ' ' + s[-2]
+
+    def format_stickers(self, stickers):
+        all_stickers = []
+        for s in stickers:
+            sticker = self.sticker_to_string(s.find_element(By.TAG_NAME, "img").get_attribute('src'))
+            all_stickers.append(sticker)
+            if sticker and (self.special[0] in sticker or self.special[1] in sticker or self.special[2] in sticker):
+                self.is_special = True
+        return all_stickers
 
     def read_page(self):
         # give 10 second for elements to show, else exit.
@@ -66,18 +81,20 @@ class Scraper:
                 price = n.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_pricePrimary']").text[1:]
 
                 stickers = n.find_elements(By.CSS_SELECTOR, "div[class^='Sticker_container']")
-                all_stickers = [self.sticker_to_string(sticker.find_element(By.TAG_NAME, "img").get_attribute('src')) for
-                                sticker
-                                in stickers]
+                self.is_special = False
+                all_stickers = self.format_stickers(stickers)
 
-                # Check if link exists in DataFrame
-                if link not in self.df['Link'].values:
-                    # Append new row to DataFrame
+                if link not in self.df['Link'].values and (self.is_special):
+                    if self.is_first:
+                        self.df = self.df._append({'Listing Name': 'NEW SCRAPE'}, ignore_index=True)
+                        self.is_first = False
+
                     self.df = self.df._append(
                         {'Listing Name': name, 'Wear': wear, 'Float': float_value, 'Price': price,
                          'Stickers': all_stickers,
                          'Link': link}, ignore_index=True)
-                    print('add')
+
+                    print([name, price, all_stickers, link])
 
         # Write DataFrame back to CSV file
         self.df.to_csv(self.file_path, index=False)
@@ -94,4 +111,4 @@ class Scraper:
                 break
 
 
-Scraper()
+Scraper(True)
