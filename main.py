@@ -53,8 +53,9 @@ class Scraper:
             self.read_pages()
 
     def sticker_to_string(self, s: str):
-        s = s.split('/')
-        return s[-1].split('.')[0] + ' ' + s[-2]
+        if s:
+            s = s.split('/')
+            return s[-1].split('.')[0] + ' ' + s[-2]
 
     def format_stickers(self, stickers):
         all_stickers = []
