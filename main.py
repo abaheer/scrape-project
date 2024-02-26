@@ -11,13 +11,15 @@ import pandas as pd
 
 
 class Scraper:
-    def __init__(self, page_url, file_path, sticker_filter: bool):
-
-        self.sticker_filter = sticker_filter
+    def __init__(self, items: list):
+        self.count = 0
+        self.df = None
+        self.sticker_filter = False
         self.special = ['holo', 'gold', 'foil']
         self.avoid = ['rmr', 'sig']
         self.is_special = False
         self.is_first = True
+        self.file_path = ''
 
         chrome_options = Options()
         chrome_options.add_argument("--headless=new")
@@ -28,20 +30,27 @@ class Scraper:
         self.service = Service(executable_path='chromedriver.exe')
         self.driver = webdriver.Chrome(service=self.service, options=chrome_options)
 
-        self.driver.get(page_url)
+        self.items = items
+        self.load_page()
 
-        self.file_path = file_path
-        file_exists = os.path.exists(self.file_path)
+    def load_page(self):
 
-        # initialize DataFrame and write header if file does not exist
-        if not file_exists:
-            df = pd.DataFrame(columns=['Listing Name', 'Wear', 'Float', 'Price', 'Stickers', 'Link'])
-            df.to_csv(self.file_path, index=False)
+        for item in self.items:
+            print('loading page: ', item[0])
+            self.driver.get(item[0])
+            self.file_path = item[1]
+            self.sticker_filter = item[2]
 
-        # read the CSV file into a DataFrame
-        self.df = pd.read_csv(self.file_path)
+            file_exists = os.path.exists(self.file_path)
 
-        self.read_pages()
+            # initialize DataFrame and write header if file does not exist
+            if not file_exists:
+                df = pd.DataFrame(columns=['Listing Name', 'Wear', 'Float', 'Price', 'Stickers', 'Link'])
+                df.to_csv(self.file_path, index=False)
+
+            # read the CSV file into a DataFrame
+            self.df = pd.read_csv(self.file_path)
+            self.read_pages()
 
     def sticker_to_string(self, s: str):
         s = s.split('/')
@@ -106,15 +115,20 @@ class Scraper:
                 WebDriverWait(self.driver, 2).until(
                     expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "a[class^='Pager_next']"))).click()
             except TimeoutException as e:
-                print("no next page, quitting.")
-                self.driver.quit()
-                break
+                self.count += 1
+                if self.count < len(self.items):
+                    print('no next page, going to next url')
+                    break
+                else:
+                    print("no next page or next url, quitting.")
+                    self.driver.quit()
+                    break
 
+
+# take list of tuples in form: (page_url: str, file_path: str, sticker_filter: bool)
 url="https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_Rifle.AK-47%2CCSGO_Type_Rifle.M4A1-S%2CCSGO_Type_Rifle.M4A4&page=1"
-Scraper(url, 'data_sh.csv', True)
-
 url2="https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_SniperRifle.AWP%2CCSGO_Type_Pistol.Desert+Eagle%2CCSGO_Type_Pistol.USP-S%2CCSGO_Type_Pistol.Glock-18&page=1"
-Scraper(url2, 'data_sh.csv', True)
-
 url3="https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true"
-Scraper(url3, 'data.csv', False)
+
+scrape_items = [(url, 'data_sh.csv', True), (url2, 'data_sh.csv', True), (url3, 'data.csv', False)]
+Scraper(scrape_items)
