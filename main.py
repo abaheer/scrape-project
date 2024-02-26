@@ -12,19 +12,19 @@ import pandas as pd
 
 class Scraper:
     def __init__(self, items: list):
-        self.first_load = True
-        self.count = 0
-        self.df = None
         self.sticker_filter = False
         self.special = ['holo', 'gold', 'foil']
         self.avoid = ['rmr', 'sig']
         self.is_special = False
+        self.first_load = True
+        self.count = 0
         self.is_first = True
+        self.df = None
         self.file_path = ''
 
         chrome_options = Options()
         chrome_options.add_argument("--headless=new")
-
+        # need to specify user_agent; otherwise blocked when headless
         user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'
         chrome_options.add_argument(f'user-agent={user_agent}')
 
@@ -33,25 +33,6 @@ class Scraper:
 
         self.items = items
         self.load_page()
-
-    def load_page(self):
-
-        for item in self.items:
-            print('loading page: ', item[0])
-            self.driver.get(item[0])
-            self.file_path = item[1]
-            self.sticker_filter = item[2]
-
-            file_exists = os.path.exists(self.file_path)
-
-            # initialize DataFrame and write header if file does not exist
-            if not file_exists:
-                df = pd.DataFrame(columns=['Listing Name', 'Wear', 'Float', 'Price', 'Stickers', 'Link'])
-                df.to_csv(self.file_path, index=False)
-
-            # read the CSV file into a DataFrame
-            self.df = pd.read_csv(self.file_path)
-            self.read_pages()
 
     def sticker_to_string(self, s: str):
         if s:
@@ -70,6 +51,23 @@ class Scraper:
                 self.is_special = True
         return all_stickers
 
+    def load_page(self):
+
+        for item in self.items:
+            print('loading page: ', item[0])
+            self.driver.get(item[0])
+            self.file_path = item[1]
+            self.sticker_filter = item[2]
+
+            file_exists = os.path.exists(self.file_path)
+
+            if not file_exists:
+                df = pd.DataFrame(columns=['Listing Name', 'Wear', 'Float', 'Price', 'Stickers', 'Link'])
+                df.to_csv(self.file_path, index=False)
+
+            self.df = pd.read_csv(self.file_path)
+            self.read_pages()
+
     def read_page(self):
         # on first visit to website
         if self.first_load:
@@ -79,12 +77,13 @@ class Scraper:
             self.first_load = False
 
         # compare to buff market price instead of steam market price
-        WebDriverWait(self.driver, 2).until(
+        WebDriverWait(self.driver, 5).until(
             expected_conditions.element_to_be_clickable((By.XPATH, '//img[@src="/img/price_plus@2x.png"]'))).click()
         comparison = self.driver.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_marketFilterRow']")
         WebDriverWait(comparison, 5).until(
             expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "div[class^='FilterRadio_checkbox']"))).click()
 
+        # wait for buff prices to load
         WebDriverWait(self.driver, 10).until(
             expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_buffPrice']")))
 
@@ -111,15 +110,15 @@ class Scraper:
                 price = WebDriverWait(n, 10).until(
                     expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='ItemCardNewBody_pricePrimary']"))).text[1:]
 
+                stickers = WebDriverWait(n, 10).until(
+                    expected_conditions.presence_of_all_elements_located((By.CSS_SELECTOR, "div[class^='Sticker_container']")))
+
                 try:
                     price = round(float(price)*1.09, 2)
                     buff_price = round(float(buff_price)*1.09, 2)
                 except TypeError as e:
                     print(e)
 
-                #print(price,buff_price)
-
-                stickers = n.find_elements(By.CSS_SELECTOR, "div[class^='Sticker_container']")
                 self.is_special = False
                 all_stickers = self.format_stickers(stickers)
                 if link not in self.df['Link'].values and (self.is_special or not self.sticker_filter):
@@ -133,7 +132,6 @@ class Scraper:
                          'Link': link}, ignore_index=True)
                     print([name, price, buff_price, all_stickers, link])
 
-        # Write DataFrame back to CSV file
         self.df.to_csv(self.file_path, index=False)
 
     def read_pages(self):
