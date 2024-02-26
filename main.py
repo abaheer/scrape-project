@@ -12,6 +12,7 @@ import pandas as pd
 
 class Scraper:
     def __init__(self, items: list):
+        self.first_load = True
         self.count = 0
         self.df = None
         self.sticker_filter = False
@@ -70,30 +71,57 @@ class Scraper:
         return all_stickers
 
     def read_page(self):
-        # give 10 second for elements to show, else exit.
+        # on first visit to website
+        if self.first_load:
+            # accept cookies before proceeding as we will need to click some things
+            WebDriverWait(self.driver, 10).until(
+                expected_conditions.element_to_be_clickable((By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"))).click()
+            self.first_load = False
+
+        # compare to buff market price instead of steam market price
+        WebDriverWait(self.driver, 2).until(
+            expected_conditions.element_to_be_clickable((By.XPATH, '//img[@src="/img/price_plus@2x.png"]'))).click()
+        comparison = self.driver.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_marketFilterRow']")
+        WebDriverWait(comparison, 5).until(
+            expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "div[class^='FilterRadio_checkbox']"))).click()
+
         WebDriverWait(self.driver, 10).until(
-            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='ItemCardNew_wrapper']")))
-        WebDriverWait(self.driver, 10).until(
-            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_name']")))
-        WebDriverWait(self.driver, 10).until(
-            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='ItemCardNewBody_wear']")))
-        WebDriverWait(self.driver, 10).until(
-            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_float']")))
+            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_buffPrice']")))
 
         listings = self.driver.find_elements(By.CSS_SELECTOR, "div[class^='ItemCardNew_wrapper']")
 
         for n in listings:
             if ' ' not in n.get_attribute('class'):
-                link = n.find_element(By.TAG_NAME, "a").get_attribute('href')
-                name = n.find_element(By.CSS_SELECTOR, "span[class^='ItemCardNewBody_name']").text
-                wear = n.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_wear']").text
-                float_value = n.find_element(By.CSS_SELECTOR, "span[class^='ItemCardNewBody_float']").text
-                price = n.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_pricePrimary']").text[1:]
+
+                buff_price = WebDriverWait(n, 10).until(
+                    expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_buffPrice']"))).text[7:]
+
+                link = WebDriverWait(n, 10).until(
+                    expected_conditions.presence_of_element_located((By.TAG_NAME, "a"))).get_attribute('href')
+
+                name = WebDriverWait(n, 10).until(
+                    expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_name']"))).text
+
+                wear = WebDriverWait(n, 10).until(
+                    expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='ItemCardNewBody_wear']"))).text
+
+                float_value = WebDriverWait(n, 10).until(
+                    expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_float']"))).text
+
+                price = WebDriverWait(n, 10).until(
+                    expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='ItemCardNewBody_pricePrimary']"))).text[1:]
+
+                try:
+                    price = round(float(price)*1.09, 2)
+                    buff_price = round(float(buff_price)*1.09, 2)
+                except TypeError as e:
+                    print(e)
+
+                #print(price,buff_price)
 
                 stickers = n.find_elements(By.CSS_SELECTOR, "div[class^='Sticker_container']")
                 self.is_special = False
                 all_stickers = self.format_stickers(stickers)
-
                 if link not in self.df['Link'].values and (self.is_special or not self.sticker_filter):
                     if self.is_first:
                         self.df = self.df._append({'Listing Name': 'NEW SCRAPE'}, ignore_index=True)
@@ -103,8 +131,7 @@ class Scraper:
                         {'Listing Name': name, 'Wear': wear, 'Float': float_value, 'Price': price,
                          'Stickers': all_stickers,
                          'Link': link}, ignore_index=True)
-
-                    print([name, price, all_stickers, link])
+                    print([name, price, buff_price, all_stickers, link])
 
         # Write DataFrame back to CSV file
         self.df.to_csv(self.file_path, index=False)
@@ -115,7 +142,7 @@ class Scraper:
                 self.read_page()
                 WebDriverWait(self.driver, 2).until(
                     expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "a[class^='Pager_next']"))).click()
-            except TimeoutException as e:
+            except TimeoutException:
                 self.count += 1
                 if self.count < len(self.items):
                     print('no next page, going to next url')
