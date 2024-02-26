@@ -25,10 +25,12 @@ class Scraper:
         self.output = []
 
         chrome_options = Options()
-        #chrome_options.add_argument("--headless=new")
-        # need to specify user_agent; otherwise blocked when headless
-        #user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'
-        #chrome_options.add_argument(f'user-agent={user_agent}')
+
+        # ----------------------------- run in headless -----------------------------
+        chrome_options.add_argument("--headless=new")
+        user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'
+        chrome_options.add_argument(f'user-agent={user_agent}')
+        # ------- need to specify user_agent; otherwise blocked when headless -------
 
         self.service = Service(executable_path='chromedriver.exe')
         self.driver = webdriver.Chrome(service=self.service, options=chrome_options)
@@ -56,6 +58,7 @@ class Scraper:
     def load_page(self):
         for item in self.items:
             print('loading page: ', item[0])
+            print("\n")
             self.driver.get(item[0])
             self.file_path = item[1]
             self.sticker_filter = item[2]
@@ -69,7 +72,8 @@ class Scraper:
             self.df = pd.read_csv(self.file_path)
             self.read_pages()
         print('\n')
-        print(tabulate(self.output, headers=["name", "price", "buff_price", "stickers", "link"]))
+        if self.output:
+            print(tabulate(self.output, headers=["name", "price", "buff_price", "stickers", "link"]))
 
     def read_page(self):
         # on first visit to website
@@ -134,7 +138,7 @@ class Scraper:
                              'Stickers': all_stickers,
                              'Link': link}, ignore_index=True)
 
-                    self.output.append([name, price, buff_price, all_stickers, link])
+                        self.output.append([name, price, buff_price, all_stickers, link])
 
                 except TimeoutException as e:
                     print('listing does not contain stickers')
@@ -144,24 +148,22 @@ class Scraper:
         self.df.to_csv(self.file_path, index=False)
 
     def read_pages(self):
-        self.read_page()
-        WebDriverWait(self.driver, 2).until(
-            expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "a[class^='Pager_next']"))).click()
-        # while True:
-        #     try:
-        #         self.read_page()
-        #         WebDriverWait(self.driver, 2).until(
-        #             expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "a[class^='Pager_next']"))).click()
-        #     except TimeoutException as e:
-        #         print(e)
-        #         self.count += 1
-        #         if self.count < len(self.items):
-        #             print('no next page, going to next url')
-        #             break
-        #         else:
-        #             print("no next page or next url, quitting.")
-        #             self.driver.quit()
-        #             break
+        while True:
+            try:
+                self.read_page()
+                WebDriverWait(self.driver, 2).until(
+                    expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "a[class^='Pager_next']"))).click()
+            except TimeoutException as e:
+                self.count += 1
+                if self.count < len(self.items):
+                    print('no next page, going to next url')
+                    print("\n")
+                    break
+                else:
+                    print("no next page or next url, quitting.")
+                    self.driver.quit()
+                    print("\n")
+                    break
 
 
 # take list of tuples in form: (page_url: str, file_path: str, sticker_filter: bool)
@@ -170,6 +172,6 @@ url2="https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Sc
 url3="https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true"
 url4="https://gamerpay.gg/?buffMax=105&priceMin=106.14731401144546&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&query=AWP+%7C+Asiimov&autocompleted=1&page=1"
 
-#scrape_items = [(url, 'data_sh.csv', True), (url2, 'data_sh.csv', True), (url3, 'data.csv', False)]
-scrape_items = [(url4, 'awp_asiimov.csv', False)]
+scrape_items = [(url, 'data_sh.csv', True), (url2, 'data_sh.csv', True), (url3, 'data.csv', False)]
+#scrape_items = [(url4, 'awp_asiimov.csv', False)]
 Scraper(scrape_items)
