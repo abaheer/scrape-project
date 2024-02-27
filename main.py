@@ -58,7 +58,6 @@ class Scraper:
     def load_page(self):
         for item in self.items:
             print('loading page: ', item[0])
-            print("\n")
             self.driver.get(item[0])
             self.file_path = item[1]
             self.sticker_filter = item[2]
@@ -71,8 +70,8 @@ class Scraper:
 
             self.df = pd.read_csv(self.file_path)
             self.read_pages()
-        print('\n')
         if self.output:
+            print('\n')
             print(tabulate(self.output, headers=["name", "price", "buff_price", "stickers", "link"]))
 
     def read_page(self):
@@ -84,14 +83,14 @@ class Scraper:
             self.first_load = False
 
         # compare to buff market price instead of steam market price
-        WebDriverWait(self.driver, 5).until(
+        WebDriverWait(self.driver, 15).until(
             expected_conditions.element_to_be_clickable((By.XPATH, '//img[@src="/img/price_plus@2x.png"]'))).click()
         comparison = self.driver.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_marketFilterRow']")
-        WebDriverWait(comparison, 5).until(
+        WebDriverWait(comparison, 15).until(
             expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "div[class^='FilterRadio_checkbox']"))).click()
 
         # wait for buff prices to load
-        WebDriverWait(self.driver, 10).until(
+        WebDriverWait(self.driver, 15).until(
             expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_buffPrice']")))
 
         listings = self.driver.find_elements(By.CSS_SELECTOR, "div[class^='ItemCardNew_wrapper']")
