@@ -75,7 +75,7 @@ class Scraper:
 
             self.df = pd.read_csv(self.file_path)
             self.read_pages()
-            self.send_email()
+        self.send_email()
 
     def read_page(self):
         # on first visit to website
@@ -149,7 +149,7 @@ class Scraper:
                              'Stickers': all_stickers,
                              'Link': link}, ignore_index=True)
 
-                    self.output.append([name, price+'/'+buff_price, all_stickers, link])
+                        self.output.append([name, str(price)+' / '+str(buff_price), all_stickers, link])
 
                 except TimeoutException as e:
                     print('listing does not contain stickers')
