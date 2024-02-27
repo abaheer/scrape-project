@@ -149,7 +149,7 @@ class Scraper:
                              'Stickers': all_stickers,
                              'Link': link}, ignore_index=True)
 
-                    self.output.append([name, price, buff_price, all_stickers, link])
+                    self.output.append([name, price+'/'+buff_price, all_stickers, link])
 
                 except TimeoutException as e:
                     print('listing does not contain stickers')
@@ -184,7 +184,7 @@ class Scraper:
                 email_password = json_data['email_password']
                 email_receiver = json_data['email_receiver']
                 subject = "New items from GamerPay Scraper"
-                body = tabulate(self.output, headers=["name", "price", "buff", "stickers", "link"], tablefmt='html')
+                body = tabulate(self.output, headers=["name", "price/buff", "stickers", "link"], tablefmt='html')
                 em = EmailMessage()
                 em['From'] = email_sender
                 em['To'] = email_receiver
@@ -197,14 +197,15 @@ class Scraper:
                     smtp.sendmail(email_sender, email_receiver, em.as_string())
             print('email sent')
         else:
-            print(tabulate(self.output, headers=["name", "price", "buff_price", "stickers", "link"]))
+            print(tabulate(self.output, headers=["name", "price/buff", "stickers", "link"]))
 
 
 # take list of tuples in form: (page_url: str, file_path: str, sticker_filter: bool)
-url = "https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_Rifle.AK-47%2CCSGO_Type_Rifle.M4A1-S%2CCSGO_Type_Rifle.M4A4&page=1"
-url2 = "https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_SniperRifle.AWP%2CCSGO_Type_Pistol.Desert+Eagle%2CCSGO_Type_Pistol.USP-S%2CCSGO_Type_Pistol.Glock-18&page=1"
-url3 = "https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true"
-url4 = "https://gamerpay.gg/?buffMax=98&priceMin=106.14731401144546&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&query=AWP+%7C+Asiimov&autocompleted=1&page=1"
+url = "https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_Rifle.AK-47&buffMin=98&page=1"
+url2 = "https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_Rifle.M4A1-S%2CCSGO_Type_Rifle.M4A4&page=1"
+url3 = "https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_SniperRifle.AWP%2CCSGO_Type_Pistol.Desert+Eagle%2CCSGO_Type_Pistol.USP-S%2CCSGO_Type_Pistol.Glock-18&page=1"
+url4 = "https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true"
+url5 = "https://gamerpay.gg/?buffMax=98&priceMin=106.14731401144546&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&query=AWP+%7C+Asiimov&autocompleted=1&page=1"
 
-scrape_items = [(url, 'data_sh.csv', True), (url2, 'data_sh.csv', True), (url3, 'data.csv', False)]
+scrape_items = [(url, 'data_sh.csv', True), (url2, 'data_sh.csv', True), (url3, 'data_sh.csv', True), (url4, 'data.csv', False)]
 Scraper(scrape_items)
