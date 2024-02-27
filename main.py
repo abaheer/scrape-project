@@ -7,6 +7,11 @@ from selenium.webdriver.support.wait import TimeoutException
 from selenium.webdriver.chrome.options import Options
 
 from tabulate import tabulate
+from email.message import EmailMessage
+import ssl
+import smtplib
+import json
+
 import os
 import pandas as pd
 
@@ -70,16 +75,15 @@ class Scraper:
 
             self.df = pd.read_csv(self.file_path)
             self.read_pages()
-        if self.output:
-            print('\n')
-            print(tabulate(self.output, headers=["name", "price", "buff_price", "stickers", "link"]))
+            self.send_email()
 
     def read_page(self):
         # on first visit to website
         if self.first_load:
             # accept cookies before proceeding as we will need to click some things
             WebDriverWait(self.driver, 10).until(
-                expected_conditions.element_to_be_clickable((By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"))).click()
+                expected_conditions.element_to_be_clickable(
+                    (By.ID, "CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll"))).click()
             self.first_load = False
 
         # compare to buff market price instead of steam market price
@@ -87,11 +91,13 @@ class Scraper:
             expected_conditions.element_to_be_clickable((By.XPATH, '//img[@src="/img/price_plus@2x.png"]'))).click()
         comparison = self.driver.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_marketFilterRow']")
         WebDriverWait(comparison, 15).until(
-            expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "div[class^='FilterRadio_checkbox']"))).click()
+            expected_conditions.element_to_be_clickable(
+                (By.CSS_SELECTOR, "div[class^='FilterRadio_checkbox']"))).click()
 
         # wait for buff prices to load
         WebDriverWait(self.driver, 15).until(
-            expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_buffPrice']")))
+            expected_conditions.presence_of_element_located(
+                (By.CSS_SELECTOR, "span[class^='ItemCardNewBody_buffPrice']")))
 
         listings = self.driver.find_elements(By.CSS_SELECTOR, "div[class^='ItemCardNew_wrapper']")
 
@@ -99,29 +105,35 @@ class Scraper:
             if ' ' not in n.get_attribute('class'):
 
                 buff_price = WebDriverWait(n, 10).until(
-                    expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_buffPrice']"))).text[7:]
+                    expected_conditions.presence_of_element_located(
+                        (By.CSS_SELECTOR, "span[class^='ItemCardNewBody_buffPrice']"))).text[7:]
 
                 link = WebDriverWait(n, 10).until(
                     expected_conditions.presence_of_element_located((By.TAG_NAME, "a"))).get_attribute('href')
 
                 name = WebDriverWait(n, 10).until(
-                    expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_name']"))).text
+                    expected_conditions.presence_of_element_located(
+                        (By.CSS_SELECTOR, "span[class^='ItemCardNewBody_name']"))).text
 
                 wear = WebDriverWait(n, 10).until(
-                    expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='ItemCardNewBody_wear']"))).text
+                    expected_conditions.presence_of_element_located(
+                        (By.CSS_SELECTOR, "div[class^='ItemCardNewBody_wear']"))).text
 
                 float_value = WebDriverWait(n, 10).until(
-                    expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span[class^='ItemCardNewBody_float']"))).text
+                    expected_conditions.presence_of_element_located(
+                        (By.CSS_SELECTOR, "span[class^='ItemCardNewBody_float']"))).text
 
                 price = WebDriverWait(n, 10).until(
-                    expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "div[class^='ItemCardNewBody_pricePrimary']"))).text[1:]
+                    expected_conditions.presence_of_element_located(
+                        (By.CSS_SELECTOR, "div[class^='ItemCardNewBody_pricePrimary']"))).text[1:]
 
                 try:
-                    price = round(float(price)*1.09, 2)
-                    buff_price = round(float(buff_price)*1.09, 2)
+                    price = round(float(price) * 1.09, 2)
+                    buff_price = round(float(buff_price) * 1.09, 2)
 
                     stickers = WebDriverWait(n, 1).until(
-                        expected_conditions.presence_of_all_elements_located((By.CSS_SELECTOR, "div[class^='Sticker_container']")))
+                        expected_conditions.presence_of_all_elements_located(
+                            (By.CSS_SELECTOR, "div[class^='Sticker_container']")))
                     self.is_special = False
                     all_stickers = self.format_stickers(stickers)
 
@@ -137,7 +149,7 @@ class Scraper:
                              'Stickers': all_stickers,
                              'Link': link}, ignore_index=True)
 
-                        self.output.append([name, price, buff_price, all_stickers, link])
+                    self.output.append([name, price, buff_price, all_stickers, link])
 
                 except TimeoutException as e:
                     print('listing does not contain stickers')
@@ -164,13 +176,34 @@ class Scraper:
                     print("\n")
                     break
 
+    def send_email(self):
+        if self.output and os.path.isfile('email.json'):
+            with open("email.json") as json_file:
+                json_data = json.load(json_file)
+                email_sender = json_data['email_sender']
+                email_password = json_data['email_password']
+                email_receiver = json_data['email_receiver']
+                subject = "New items from GamerPay Scraper"
+                body = tabulate(self.output, headers=["name", "price", "buff_price", "stickers", "link"])
+                em = EmailMessage()
+                em['From'] = email_sender
+                em['To'] = email_receiver
+                em['Subject'] = subject
+                em.set_content(body)
+                context = ssl.create_default_context()
+                with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
+                    smtp.login(email_sender, email_password)
+                    smtp.sendmail(email_sender, email_receiver, em.as_string())
+        else:
+            print(tabulate(self.output, headers=["name", "price", "buff_price", "stickers", "link"]))
+
 
 # take list of tuples in form: (page_url: str, file_path: str, sticker_filter: bool)
-url="https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_Rifle.AK-47%2CCSGO_Type_Rifle.M4A1-S%2CCSGO_Type_Rifle.M4A4&page=1"
-url2="https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_SniperRifle.AWP%2CCSGO_Type_Pistol.Desert+Eagle%2CCSGO_Type_Pistol.USP-S%2CCSGO_Type_Pistol.Glock-18&page=1"
-url3="https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true"
-url4="https://gamerpay.gg/?buffMax=105&priceMin=106.14731401144546&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&query=AWP+%7C+Asiimov&autocompleted=1&page=1"
+# url = "https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_Rifle.AK-47%2CCSGO_Type_Rifle.M4A1-S%2CCSGO_Type_Rifle.M4A4&page=1"
+# url2 = "https://gamerpay.gg/?buffMax=102&priceMin=370.0619853825516&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&sortBy=deals&ascending=true&tournaments=Paris+2023%2CAntwerp+2022%2CStockholm+2021%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017&priceMax=1850.3099269127579&subtype=CSGO_Type_SniperRifle.AWP%2CCSGO_Type_Pistol.Desert+Eagle%2CCSGO_Type_Pistol.USP-S%2CCSGO_Type_Pistol.Glock-18&page=1"
+# url3 = "https://gamerpay.gg/?buffMax=105&priceMin=114.99999999999999&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&tournaments=Katowice+2014%2CCologne+2014%2CDreamHack+2014%2CKatowice+2015%2CCologne+2015%2CCluj-Napoca+2015%2CMLG+Columbus+2016%2CCologne+2016%2CAtlanta+2017&page=1&priceMax=2200&sortBy=deals&ascending=true"
+url4 = "https://gamerpay.gg/?buffMax=105&priceMin=106.14731401144546&wear=Battle-Scarred%2CField-Tested%2CMinimal+Wear%2CFactory+New&query=AWP+%7C+Asiimov&autocompleted=1&page=1"
 
-scrape_items = [(url, 'data_sh.csv', True), (url2, 'data_sh.csv', True), (url3, 'data.csv', False)]
-#scrape_items = [(url4, 'awp_asiimov.csv', False)]
+# scrape_items = [(url, 'data_sh.csv', True), (url2, 'data_sh.csv', True), (url3, 'data.csv', False)]
+scrape_items = [(url4, 'awp_asiimov2.csv', False)]
 Scraper(scrape_items)
