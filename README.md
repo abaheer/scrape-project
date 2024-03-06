@@ -6,6 +6,8 @@
   - Save all listings that match filters in a existing or new .csv file
   - Email new listings to yourself
 
+Click [HERE](https://youtu.be/breMXjf1orw) for a demo of the scraper in action (not in headless mode).
+
 ## GamerPay Listings:
 
 ![](listing.jpg)
