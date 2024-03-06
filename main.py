@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.common import ElementClickInterceptedException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -28,6 +29,7 @@ class Scraper:
         self.df = None
         self.file_path = ''
         self.output = []
+        self.page = 1
 
         chrome_options = Options()
 
@@ -36,6 +38,8 @@ class Scraper:
         user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36'
         chrome_options.add_argument(f'user-agent={user_agent}')
         # ------- need to specify user_agent; otherwise blocked when headless -------
+
+        # chrome_options.add_experimental_option("detach", True)
 
         self.service = Service(executable_path='chromedriver.exe')
         self.driver = webdriver.Chrome(service=self.service, options=chrome_options)
@@ -162,11 +166,15 @@ class Scraper:
         while True:
             try:
                 self.read_page()
+                self.page += 1
                 WebDriverWait(self.driver, 2).until(
-                    expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "a[class^='Pager_next']"))).click()
+                    expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "a[class^='Pager_next']")))
+                self.driver.get(self.items[self.count][0] + f'&page={self.page}')
+
             except TimeoutException as e:
                 self.count += 1
                 if self.count < len(self.items):
+                    self.page = 1
                     print('no next page, going to next url')
                     print("\n")
                     break
