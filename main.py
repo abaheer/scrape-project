@@ -58,10 +58,11 @@ class Scraper:
         for s in stickers:
             sticker = self.sticker_to_string(s.find_element(By.TAG_NAME, "img").get_attribute('src'))
             all_stickers.append(sticker)
-            if sticker and self.sticker_filter and (self.special[0] in sticker or self.special[1] in sticker or
-                                                    self.special[2] in sticker) and (self.avoid[0] not in sticker and
-                                                                                     self.avoid[1] not in sticker):
-                self.is_special = True
+            if sticker and self.sticker_filter:
+                for special in self.special:
+                    if special in sticker:
+                        self.is_special = True
+                        break
         return all_stickers
 
     def load_page(self):
