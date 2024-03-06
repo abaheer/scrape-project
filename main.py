@@ -39,7 +39,7 @@ class Scraper:
         chrome_options.add_argument(f'user-agent={user_agent}')
         # ------- need to specify user_agent; otherwise blocked when headless -------
 
-        # chrome_options.add_experimental_option("detach", True)
+        #chrome_options.add_experimental_option("detach", True)
 
         self.service = Service(executable_path='chromedriver.exe')
         self.driver = webdriver.Chrome(service=self.service, options=chrome_options)
@@ -58,10 +58,11 @@ class Scraper:
         for s in stickers:
             sticker = self.sticker_to_string(s.find_element(By.TAG_NAME, "img").get_attribute('src'))
             all_stickers.append(sticker)
-            if sticker and self.sticker_filter and (self.special[0] in sticker or self.special[1] in sticker or
-                                                    self.special[2] in sticker) and (self.avoid[0] not in sticker and
-                                                                                     self.avoid[1] not in sticker):
-                self.is_special = True
+            if sticker and self.sticker_filter:
+                for special in self.special:
+                    if special in sticker:
+                        self.is_special = True
+                        break
         return all_stickers
 
     def load_page(self):
@@ -91,8 +92,10 @@ class Scraper:
             self.first_load = False
 
         # compare to buff market price instead of steam market price
+        print('looking for plus')
         WebDriverWait(self.driver, 15).until(
-            expected_conditions.element_to_be_clickable((By.XPATH, '//img[@src="/img/price_plus@2x.png"]'))).click()
+            expected_conditions.element_to_be_clickable((By.XPATH, "//img[contains(@src, '/img/price_plus_dark')]"))).click()
+        print('found plus')
         comparison = self.driver.find_element(By.CSS_SELECTOR, "div[class^='ItemCardNewBody_marketFilterRow']")
         WebDriverWait(comparison, 15).until(
             expected_conditions.element_to_be_clickable(
@@ -179,6 +182,7 @@ class Scraper:
                     print("\n")
                     break
                 else:
+                    #print(e)
                     print("no next page or next url, quitting.")
                     self.driver.quit()
                     print("\n")
@@ -209,9 +213,9 @@ class Scraper:
 
 
 # take list of tuples in form: (page_url: str, file_path: str, sticker_filter: bool)
-url = "https://gamerpay.gg/?query=M4A1-S+%7C+Chantico%27s+Fire&autocompleted=1&page=1"
-url2 = "https://gamerpay.gg/?query=AWP+%7C+Asiimov&autocompleted=1&page=1"
-url3 = "https://gamerpay.gg/?autocompleted=1&page=1&query=AK-47+%7C+Redline"
+url = "https://gamerpay.gg/?query=M4A1-S+%7C+Chantico%27s+Fire&autocompleted=1"
+url2 = "https://gamerpay.gg/?query=AWP+%7C+Asiimov&autocompleted=1"
+url3 = "https://gamerpay.gg/?autocompleted=1&query=AK-47+%7C+Redline&tournaments=Paris+2023%2CRio+2022%2CAntwerp+2022%2CStockholm+2021%2C2020+Regional+Major+Rankings%2CBerlin+2019%2CKatowice+2019%2CLondon+2018%2CBoston+2018%2CKrakow+2017%2CAtlanta+2017%2CCologne+2016%2CMLG+Columbus+2016%2CCluj-Napoca+2015%2CCologne+2015%2CKatowice+2015%2CDreamHack+2014%2CCologne+2014"
 
-scrape_items = [(url, 'chantico.csv', True), (url2, 'awp-asiimov.csv', True), (url3, 'redline.csv', True)]
+scrape_items = [(url3, 'redline.csv', True)]
 Scraper(scrape_items)
