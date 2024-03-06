@@ -15,7 +15,7 @@
   - BUFF price (going price on market)
   - Stickers which can increase value of item
 
-## Example email containing new listings:
+## Example output containing new listings:
 
 <div id=":mw" class="ii gt" jslog="20277; u014N:xr6bB; 1:WyIjdGhyZWFkLWY6MTc5MjczNjQ5NDcyODQxMDYxMiJd; 4:WyIjbXNnLWY6MTc5MjczNjQ5NDcyODQxMDYxMiJd"><div id=":mv" class="a3s aiL "><table>
 <thead>
@@ -71,4 +71,4 @@ if you would like the script to email you new listings, you must create an email
 }
 ```
 
-Follow this [tutorial](https://youtu.be/g_j6ILT-X0k?feature=shared&t=25) to get your email_password. If there is not email.json file, the new listings will be printed to console instead.
+Follow this [tutorial](https://youtu.be/g_j6ILT-X0k?feature=shared&t=25) to get your email_password. If there is no email.json file, the new listings will be printed to console instead.
